@@ -1,0 +1,5 @@
+```mass update the 'managedBy' ADUC attribute for a single user and multiple groups via .csv 
+
+Import-Csv -Path "C:\Temp\groups_test2.csv" | ForEach-Object {
+    Set-ADGroup -Identity $_.Group -ManagedBy "user1"
+} 
