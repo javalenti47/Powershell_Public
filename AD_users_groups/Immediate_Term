@@ -1,0 +1,71 @@
+```Powershell asking for sAMAccountName & SNOW INC# via entry, will disable, move, expire, and add INC# to 'notes' AD attribute```
+
+# Function to disable an Active Directory user account
+function Disable-ADUser {
+    param(
+        [string]$UserDN
+    )
+    Set-ADUser -Identity $UserDN -Enabled $false
+}
+
+# Function to set account expiration date to yesterday's date
+function Set-ADUserAccountExpires {
+    param(
+        [string]$UserDN
+    )
+    $YesterdayDate = (Get-Date).AddDays(-1)
+    Set-ADUser -Identity $UserDN -AccountExpirationDate $YesterdayDate
+}
+
+# Function to set msExchHideFromAddressLists to "1"
+function Set-ADUserMsExchHideFromAddressLists {
+    param(
+        [string]$UserDN
+    )
+    Set-ADUser -Identity $UserDN -Replace @{'msExchHideFromAddressLists'='TRUE'}
+}
+
+# Function to set the 'notes' attribute in Active Directory
+function Set-ADUserNotes {
+    param(
+        [string]$UserDN,
+        [string]$Note
+    )
+    Set-ADUser -Identity $UserDN -Replace @{'info'=$Note}
+}
+
+# Main script
+try {
+    # Import the Active Directory module
+    Import-Module ActiveDirectory -ErrorAction Stop
+
+    # Prompt for the username
+    $Username = Read-Host "Enter the username of the account to be disabled, expired, hidden, and noted"
+
+    # Get the user's DistinguishedName based on the entered username
+    $User = Get-ADUser -Filter {SamAccountName -eq $Username}
+    if ($User) {
+        $UserDN = $User.DistinguishedName
+
+        # Prompt for the INC# (incident number)
+        $IncidentNumber = Read-Host "Enter the INC# for the account"
+
+        # Disable the user account
+        Disable-ADUser -UserDN $UserDN
+
+        # Set account expiration date to yesterday's date
+        Set-ADUserAccountExpires -UserDN $UserDN
+
+        # Set msExchHideFromAddressLists to "1"
+        Set-ADUserMsExchHideFromAddressLists -UserDN $UserDN
+
+        # Set the 'notes' attribute to the provided incident number
+        Set-ADUserNotes -UserDN $UserDN -Note $IncidentNumber
+
+        Write-Host "Account actions completed successfully for user $Username."
+    } else {
+        Write-Host "User $Username not found in Active Directory."
+    }
+} catch {
+    Write-Host "Error occurred: $_"
+}
